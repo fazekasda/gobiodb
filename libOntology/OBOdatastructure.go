@@ -21,6 +21,7 @@ type TagValuePair struct {
 	Comment           string
 }
 
+// NewOBOdocument create empty OBOdocument struct
 func NewOBOdocument() *OBOdocument {
 	obod := new(OBOdocument)
 	obod.Header = make([]*TagValuePair, 0)
@@ -28,12 +29,14 @@ func NewOBOdocument() *OBOdocument {
 	return obod
 }
 
+// NewStanza create empty Stanza struct
 func NewStanza() *Stanza {
 	s := new(Stanza)
 	s.Tags = make([]*TagValuePair, 0)
 	return s
 }
 
+// NewTagValuePair create empty TagValuePair struct
 func NewTagValuePair() *TagValuePair {
 	tvp := new(TagValuePair)
 	tvp.TrailingModifiers = make(map[string]string)

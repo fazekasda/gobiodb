@@ -10,8 +10,8 @@ import (
 	"strings"
 )
 
+// ParseOBOfromfile process entire OBO file from file
 func ParseOBOfromfile(path string) (*OBOdocument, error) {
-
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -20,8 +20,8 @@ func ParseOBOfromfile(path string) (*OBOdocument, error) {
 	return ParseOBO(f)
 }
 
+// ParseOBO process entire OBO file from io.Reader
 func ParseOBO(r io.Reader) (*OBOdocument, error) {
-
 	oboScanner := bufio.NewScanner(r)
 	document := NewOBOdocument()
 
@@ -34,13 +34,19 @@ func ParseOBO(r io.Reader) (*OBOdocument, error) {
 			tag, err := parseTagValuePair(line)
 			if err != nil {
 				log.Printf("Could not parse tag %q: %v", line, err)
-			} else {
-				document.Header = append(document.Header, tag)
+				continue
+			}
+			document.Header = append(document.Header, tag)
+			if tag.Tag == "format-version" {
+				document.OBOversion = tag.Value
 			}
 		}
 	}
 	if err := oboScanner.Err(); err != nil {
 		return nil, fmt.Errorf("Could not scan: %v", err)
+	}
+	if document.OBOversion == "" {
+		log.Print("\"format-version\" tag did not found in header!")
 	}
 
 	// parse stanzas
@@ -51,7 +57,33 @@ func ParseOBO(r io.Reader) (*OBOdocument, error) {
 	// 	return nil, fmt.Errorf("Could not scan: %v", err)
 	// }
 
-	return nil, nil
+	return document, nil
+}
+
+func parseStanza(lines []string) (*Stanza, error) {
+
+	if len(lines) > 2 {
+		return nil, errors.New("A Stanza must contains at least 2 lines")
+	}
+
+	s := NewStanza()
+
+	tagname := strings.Trim(lines[0], " ")
+	if !strings.HasPrefix(tagname, "[") || !strings.HasSuffix(tagname, "]") {
+		return nil, errors.New("Stanza name not correct")
+	}
+	s.Type = tagname[1 : len(tagname)-1]
+
+	for _, line := range lines[1:] {
+		tag, err := parseTagValuePair(line)
+		if err != nil {
+			log.Printf("Could not parse tag %q: %v", line, err)
+			continue
+		}
+		s.Tags = append(s.Tags, tag)
+	}
+
+	return s, nil
 }
 
 func parseTagValuePair(line string) (*TagValuePair, error) {
@@ -60,7 +92,7 @@ func parseTagValuePair(line string) (*TagValuePair, error) {
 	// extract tag
 	tag := strings.SplitN(line, ":", 2)
 	if len(tag) != 2 {
-		return nil, errors.New("Could not ertaxt tag")
+		return nil, errors.New("Could not extract tag")
 	}
 	tvp.Tag = strings.Trim(tag[0], " ")
 
@@ -73,7 +105,7 @@ func parseTagValuePair(line string) (*TagValuePair, error) {
 	}
 
 	// extract TrailingModifiers
-	// TODU: implement
+	// TUDO: implement
 
 	// set value
 	tvp.Value = val
