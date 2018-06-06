@@ -98,7 +98,7 @@ func ParseOBO(r io.Reader) (*OBOdocument, error) {
 
 func parseStanza(lines []string) (*Stanza, error) {
 
-	if len(lines) > 2 {
+	if len(lines) < 2 {
 		return nil, errors.New("A Stanza must contains at least 2 lines")
 	}
 

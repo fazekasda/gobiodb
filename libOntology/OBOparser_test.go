@@ -24,3 +24,43 @@ func TestParseTagValuePair(t *testing.T) {
 		t.Errorf("could not parse Comment from %q, found: %q", tvpText, tvp.Comment)
 	}
 }
+
+func TestParseStanza(t *testing.T) {
+	//correct stanza
+	sanzaTex1 := []string{
+		"[Term]",
+		"key1: value1 ! comment1",
+		"key2: value2 ! comment2",
+		"incorrect tag value pais",
+	}
+	stanza, err := parseStanza(sanzaTex1)
+	if err != nil {
+		t.Errorf("error during parse %q: %v", sanzaTex1, err)
+	}
+	if stanza.Type != "Term" {
+		t.Errorf("could not parse stanza Type from %q, found: %q", sanzaTex1, stanza.Type)
+	}
+	if len(stanza.Tags) != 2 {
+		t.Error("could not parse all tag value pair in stanza")
+	}
+
+	//stanza name error
+	sanzaTex2 := []string{
+		"Term]",
+		"key1: value1 ! comment1",
+		"key2: value2 ! comment2",
+	}
+	stanza, err = parseStanza(sanzaTex2)
+	if stanza != nil || err.Error() != "Stanza name not correct" {
+		t.Errorf("error checking stanza name %q: %v", sanzaTex2, err)
+	}
+
+	//empty stanza
+	sanzaTex3 := []string{
+		"[Term]",
+	}
+	stanza, err = parseStanza(sanzaTex3)
+	if stanza != nil || err.Error() != "A Stanza must contains at least 2 lines" {
+		t.Errorf("error checking stanza length %q: %v", sanzaTex3, err)
+	}
+}
