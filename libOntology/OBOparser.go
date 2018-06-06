@@ -29,6 +29,9 @@ func ParseOBO(r io.Reader) (*OBOdocument, error) {
 	for oboScanner.Scan() {
 		line := oboScanner.Text()
 		if line == "" {
+			continue
+		}
+		if !strings.HasPrefix(line, "[") {
 			break
 		} else {
 			tag, err := parseTagValuePair(line)
@@ -50,12 +53,45 @@ func ParseOBO(r io.Reader) (*OBOdocument, error) {
 	}
 
 	// parse stanzas
-	// for oboScanner.Scan() {
-	// 	line := oboScanner.Text()
-	// }
-	// if err := oboScanner.Err(); err != nil {
-	// 	return nil, fmt.Errorf("Could not scan: %v", err)
-	// }
+	stanzaLinesBuf := make([]string, 0)
+	stanzaLinesBufChan := make(chan []string)
+	stanzaParsedChan := make(chan *Stanza)
+	// parser goroutine
+	go func() {
+		for lines := range stanzaLinesBufChan {
+			stanza, err := parseStanza(lines)
+			if err != nil {
+				log.Printf("Could not parse stanza %q: %v", stanzaLinesBuf, err)
+				continue
+			}
+			stanzaParsedChan <- stanza
+		}
+		close(stanzaParsedChan)
+	}()
+	// collect parsed stanzaz
+	go func() {
+		for s := range stanzaParsedChan {
+			document.Stanzas = append(document.Stanzas, s)
+		}
+	}()
+	// scan lines
+	for oboScanner.Scan() {
+		line := oboScanner.Text()
+		if line == "" {
+			continue
+		} else if !strings.HasPrefix(line, "[") {
+			if len(stanzaLinesBuf) > 0 {
+				stanzaLinesBufChan <- stanzaLinesBuf
+				stanzaLinesBuf = make([]string, 0)
+			}
+			stanzaLinesBuf = append(stanzaLinesBuf, line)
+		} else {
+			stanzaLinesBuf = append(stanzaLinesBuf, line)
+		}
+	}
+	if err := oboScanner.Err(); err != nil {
+		return nil, fmt.Errorf("Could not scan: %v", err)
+	}
 
 	return document, nil
 }
