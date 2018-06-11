@@ -56,6 +56,7 @@ func ParseOBO(r io.Reader) (*OBOdocument, error) {
 	stanzaLinesBuf := make([]string, 0)
 	stanzaLinesBufChan := make(chan []string)
 	stanzaParsedChan := make(chan *Stanza)
+	doneCollectingStanzas := make(chan bool)
 	// parser goroutine
 	go func() {
 		for lines := range stanzaLinesBufChan {
@@ -73,6 +74,7 @@ func ParseOBO(r io.Reader) (*OBOdocument, error) {
 		for s := range stanzaParsedChan {
 			document.Stanzas = append(document.Stanzas, s)
 		}
+		doneCollectingStanzas <- true
 	}()
 	// scan lines
 	for oboScanner.Scan() {
@@ -89,6 +91,8 @@ func ParseOBO(r io.Reader) (*OBOdocument, error) {
 			stanzaLinesBuf = append(stanzaLinesBuf, line)
 		}
 	}
+	close(stanzaLinesBufChan)
+	<-doneCollectingStanzas
 	if err := oboScanner.Err(); err != nil {
 		return nil, fmt.Errorf("Could not scan: %v", err)
 	}
