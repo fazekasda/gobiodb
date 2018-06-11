@@ -26,12 +26,14 @@ func ParseOBO(r io.Reader) (*OBOdocument, error) {
 	document := NewOBOdocument()
 
 	// parse header
+	var nextline string
 	for oboScanner.Scan() {
 		line := oboScanner.Text()
 		if line == "" {
 			continue
 		}
-		if !strings.HasPrefix(line, "[") {
+		if strings.HasPrefix(line, "[") {
+			nextline = line
 			break
 		} else {
 			tag, err := parseTagValuePair(line)
@@ -54,6 +56,7 @@ func ParseOBO(r io.Reader) (*OBOdocument, error) {
 
 	// parse stanzas
 	stanzaLinesBuf := make([]string, 0)
+	stanzaLinesBuf = append(stanzaLinesBuf, nextline)
 	stanzaLinesBufChan := make(chan []string)
 	stanzaParsedChan := make(chan *Stanza)
 	doneCollectingStanzas := make(chan bool)
@@ -81,7 +84,7 @@ func ParseOBO(r io.Reader) (*OBOdocument, error) {
 		line := oboScanner.Text()
 		if line == "" {
 			continue
-		} else if !strings.HasPrefix(line, "[") {
+		} else if strings.HasPrefix(line, "[") {
 			if len(stanzaLinesBuf) > 0 {
 				stanzaLinesBufChan <- stanzaLinesBuf
 				stanzaLinesBuf = make([]string, 0)
