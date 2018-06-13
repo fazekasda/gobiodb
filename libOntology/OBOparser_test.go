@@ -64,3 +64,14 @@ func TestParseStanza(t *testing.T) {
 		t.Errorf("error checking stanza length %q: %v", sanzaTex3, err)
 	}
 }
+
+func TestExtractAmongRunes(t *testing.T) {
+	rem, ext := extractAmongRunes("there aren't any to extract", '{', '}')
+	if rem != "there aren't any to extract" || ext != "" {
+		t.Errorf("Error with find open and close runes")
+	}
+	rem, ext = extractAmongRunes("tex t\\{\\}o {ex{tract} {secound}", '{', '}')
+	if rem != "tex t\\{\\}o {ex{tract} " || ext != "secound" {
+		t.Errorf("Error with extract text: %q - %q", rem, ext)
+	}
+}

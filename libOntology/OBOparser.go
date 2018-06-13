@@ -123,6 +123,9 @@ func parseStanza(lines []string) (*Stanza, error) {
 			log.Printf("Could not parse tag %q: %v", line, err)
 			continue
 		}
+		if tag.Tag == "id" {
+			s.ID = tag.Value
+		}
 		s.Tags = append(s.Tags, tag)
 	}
 
@@ -153,4 +156,46 @@ func parseTagValuePair(line string) (*TagValuePair, error) {
 	// set value
 	tvp.Value = val
 	return tvp, nil
+}
+
+func extractTrailingModifiers(line string) (string, map[string]string, error) {
+
+	//line, brace := extractAmongRunes(line, '{', '}')
+
+	return line, make(map[string]string), nil
+}
+
+func extractAmongRunes(line string, openRune, closeRune rune) (string, string) {
+	if strings.IndexRune(line, openRune) == -1 || strings.IndexRune(line, closeRune) == -1 {
+		return line, ""
+	}
+
+	openPos := -1
+	closePos := -1
+	for i, c := range line {
+		switch {
+		case i == 0 && c == openRune:
+			openPos = i
+		case c == openRune && line[i-1] != '\\' && closePos == -1 && openPos == -1:
+			openPos = i
+		case c == openRune && line[i-1] != '\\' && closePos != -1 && openPos != -1:
+			openPos = i
+			closePos = -1
+		case c == closeRune && line[i-1] != '\\' && closePos == -1 && openPos != -1:
+			closePos = i
+		}
+	}
+	if openPos == -1 || closePos == -1 {
+		return line, ""
+	}
+
+	lineFront := ""
+	lineBack := ""
+	if openPos > 0 {
+		lineFront = line[0:openPos]
+	}
+	if closePos+1 < len(line) {
+		lineFront = line[closePos+1 : len(line)]
+	}
+	return lineFront + lineBack, line[openPos+1 : closePos]
 }

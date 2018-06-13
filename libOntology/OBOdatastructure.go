@@ -10,6 +10,7 @@ type OBOdocument struct {
 // Stanza store an OBO entry
 type Stanza struct {
 	Type string // Term, Typedef or Instance
+	ID   string
 	Tags []*TagValuePair
 }
 
